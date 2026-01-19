@@ -2,7 +2,7 @@
 Machine Learning Course - Main Application Entry Point
 
 This is the homepage of the interactive ML course application that serves as the
-landing page and navigation hub for all course lessons.
+landing page and navigation hub for all 7 course lessons.
 
 What Students Learn Here:
 --------------------------
@@ -245,15 +245,6 @@ Use the **sidebar** (← over there!) to navigate to lessons. Here's what you'll
 
 ---
 
-**Ready to start learning?** Select a lesson from the sidebar! 👈
-"""
-)
-
-# NOTE: Lavender commented out the data part since the first few lectures will
-# focus on fundamental instead of the implementation.
-
-# ---
-
 # ### 🚀 Getting Started
 
 # 1. **Make sure you've processed the data** (see README.md):
@@ -315,6 +306,14 @@ Use the **sidebar** (← over there!) to navigate to lessons. Here's what you'll
 
 # Success message to guide new users to the navigation menu
 # The 👆 emoji visually points to where the lesson links appear
+
+---
+
+**Ready to start learning?** Select a lesson from the sidebar! 👈
+"""
+)
+
+
 st.sidebar.success("👆 Select a lesson above to begin!")
 
 # Add helpful quick links for common resources
