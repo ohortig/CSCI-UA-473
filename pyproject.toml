@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ua473"
+version = "0.1.0"
+description = "Machine Learning Course Codebase"
+requires-python = ">=3.11"
+dependencies = [
+    "streamlit",
+    "pandas",
+    "numpy",
+    "torch",
+    "transformers",
+    "sentence-transformers",
+    "datasets",
+    "scikit-learn",
+    "pytorch-lightning",
+    "torchvision",
+    "Pillow",
+    "einops",
+    "matplotlib",
+    "plotly",
+    "gymnasium[box2d]",
+    "requests",
+    "black>=25.12.0",
+    "flake8>=7.3.0",
+    "isort>=7.0.0",
+    "pre-commit>=4.5.1",
+]
+
+[tool.setuptools]
+packages = ["utils"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+[tool.black]
+line-length = 88
+[tool.flake8]
+max-line-length = 88
