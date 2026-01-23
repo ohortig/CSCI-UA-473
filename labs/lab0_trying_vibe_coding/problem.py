@@ -1,6 +1,13 @@
+# Define a function to find the maximum price in a list
 def find_max_price(prices):
     """
-    TODO: comment and docstring
+    Finds and returns the maximum price from a list of prices.
+
+    Args:
+        prices (list): A list of numerical values representing prices.
+
+    Returns:
+        The highest value in the prices list.
     """
-    prices.sort()
-    return prices[-1]
+    # Return the maximum value using the built-in max function
+    return max(prices)
