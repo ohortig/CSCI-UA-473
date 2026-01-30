@@ -399,7 +399,7 @@ def get_levels():
             },
             "hint": "https://www.geeksforgeeks.org/deep-learning/understanding-broadcasting-in-pytorch/",
             "mcq": {
-                "q": "Broadcasting works if two dimensions are equal or:",
+                "q": "Broadcasting works for two non-scalar tensors if, for every dimension, the dimensions are equal or:",
                 "opts": [
                     "One of them is 1",
                     "One of them is 0",
@@ -414,9 +414,9 @@ def get_levels():
         5: {
             "title": "Floor 5: Matrix Multiplication",
             "desc": "The Golem of Algebra blocks the exit. Combine the runes to destroy it.",
-            "task": "Perform matrix multiplication: `tensor_c` = `tensor_a` matmul `tensor_b`.",
+            "task": "Perform matrix multiplication: `tensor_c` = `tensor_a` matmul `tensor_b`. tensor_a has shape (3,) and tensor_b has shape (4,). Reshape them such that multiplication is valid (tensor_a shape (3,1) and tensor_b shape (1,4)) and output shape is (3,4).",
             "checker": check_level_5,
-            "starter_code": "# tensor_a (3,) and tensor_b (4,) are defined. Broadcast them such that multiplication is valid (tensor_a shape (3,1) and tensor_b shape (1,4)) and output shape is (3,4).\n\ntensor_c = ",
+            "starter_code": "# tensor_a has shape (3,) and tensor_b has shape (4,). \n# Reshape them such that multiplication is valid (tensor_a shape (3,1) and tensor_b shape (1,4)) and output shape is (3,4).\n\ntensor_c = ",
             "context_setup": lambda: {
                 "tensor_a": torch.randn(
                     3,

@@ -268,7 +268,7 @@ if curr_level_id > 5:
                 "9. Weighted IP",
                 "Task: `weighted_ip(x, y, W)` = x^T W y",
                 """1. @ is a shorthand for matrix multiplication.\n
-                2. You can use `T` for transpose.""",
+                2. You can use `A.T` for transpose of a matrix A.""",
                 """
                 **Input:** `x`, `y` (torch.Tensor) - Vectors; `W` (torch.Tensor) - Weight matrix. \n
                 **Output:** `float` or `Tensor` - The scalar result of `x^T W y`. \n
