@@ -72,7 +72,13 @@ Campuswire [post](https://campuswire.com/c/GFC1A6E10/feed/2) by Kyunghyun:
 
 1. Open the IDE and select "Open Folder" (antigravity) or "Open" to open the `CSCI-UA-473-Fundamentals-of-MachineLearning-Spring-2026` folder (what you just cloned in step 0).
 2. Open the terminal (shortcut: Ctrl + Shift + ` or move your mouse to the top of the screen and click **"Terminal" -> "New Terminal"**).
-3. Open the file `scripts/lab0/setup_env.sh`. Try to understand what it does. Do **NOT** run the script until you roughly understand what it is doing. **If you are using windows, you might need to modify some commands.** For example, uv installation is [different](https://docs.astral.sh/uv/getting-started/installation/) on windows.
+3. Open the file `scripts/lab0/setup_env.sh`. Try to understand what it does. Do **NOT** run the script until you roughly understand what it is doing.
+
+Tips for windows users:
+You might need to modify some commands to run successfully. For example:
+1. uv installation is [different](https://docs.astral.sh/uv/getting-started/installation/)windows.
+2. venv activation is `source .venv/Scripts/activate`
+3. windows' powershell is different from unix/linux. You should use git bash inside the IDE instead of the default terminal.
 
 Some important notes for beginners:
 1. You might see green and red ghost texts. Those are suggestions from the AI assistant (green for add and red for delete). You can ignore them for now.
