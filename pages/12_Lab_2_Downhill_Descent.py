@@ -701,9 +701,9 @@ elif st.session_state["lab_part"] == 3:
                     y=[y_path[idx]],
                     z=[z_path[idx]],
                     mode="text",
-                    text=[f"w{idx}"],
+                    text=[f"Step {idx + 1}"],
                     textposition="top center",
-                    textfont=dict(size=10, color="#B0B0B0"),
+                    textfont=dict(size=15, color="red"),
                     showlegend=False,
                 )
             )
@@ -978,7 +978,7 @@ elif st.session_state["lab_part"] == 4:
         fig = go.Figure(
             data=[
                 go.Surface(
-                    x=W1_grid, y=W2_grid, z=Z_grid, colorscale="Plasma", opacity=0.8
+                    x=W1_grid, y=W2_grid, z=Z_grid, colorscale="Viridis", opacity=0.8
                 )
             ]
         )
@@ -1013,7 +1013,7 @@ elif st.session_state["lab_part"] == 4:
                     size=10,
                     color="red",
                     symbol="diamond",
-                    line=dict(color="#B0B0B0", width=2),
+                    line=dict(color="red", width=2),
                 ),
                 name="End",
             )
@@ -1030,9 +1030,9 @@ elif st.session_state["lab_part"] == 4:
                     y=[w2_path[idx]],
                     z=[z_path[idx]],
                     mode="text",
-                    text=[f"w{idx}"],
+                    text=[f"Step {idx + 1}"],
                     textposition="top center",
-                    textfont=dict(size=9, color="#B0B0B0"),
+                    textfont=dict(size=10, color="red"),
                     showlegend=False,
                 )
             )
