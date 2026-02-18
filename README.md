@@ -174,7 +174,21 @@ python process_data.py
 ```bash
 python process_images.py
 ```
-This downloads posters and generates image embeddings (~15-30 minutes depending on network speed).
+This downloads posters and updates `local_poster_path` in the TMDB parquet.
+Note: the Hugging Face dataset does not include poster paths.
+`process_images.py` now tries a no-key fallback by scraping public TMDB movie pages
+using `movie_id`, but this is best-effort and may miss some posters.
+Using a TMDB API key is still more reliable.
+
+```bash
+# No key fallback (best-effort)
+python process_images.py --force --max-lookups 500
+```
+
+```bash
+export TMDB_API_KEY=your_key_here
+python process_images.py --force
+```
 
 ### NYC Airbnb Listings (Alternative Dataset)
 

@@ -15,18 +15,15 @@ from labs.lab3_embeddings_retrieval.level_checks import (
     check_step_5_knn,
 )
 
-try:
-    pass
+DEFAULT_EMBEDDING_MODEL = "nomic-ai/nomic-embed-text-v1.5"
 
-    TRANSFORMERS_AVAILABLE = True
-except ImportError as e:
-    print(f"Warning: Failed to import transformers: {e}")
-    TRANSFORMERS_AVAILABLE = False
-except RuntimeError as e:
-    print(
-        f"Warning: Runtime error importing transformers (likely torchvision issue): {e}"
-    )
-    TRANSFORMERS_AVAILABLE = False
+
+@st.cache_resource(show_spinner=False)
+def get_default_embedding_model():
+    from sentence_transformers import SentenceTransformer
+
+    return SentenceTransformer(DEFAULT_EMBEDDING_MODEL, trust_remote_code=True)
+
 
 # Hardcoded config to make this lab standalone
 TMDB_CONFIG = {
@@ -69,6 +66,9 @@ def render_text_coding_lab():
     # Initialize session state for variables if not present
     if "lab3_vars" not in st.session_state:
         st.session_state["lab3_vars"] = {}
+    # Keep all steps unlocked so progress loss from session resets does not block access.
+    for step_idx in range(1, 6):
+        st.session_state[f"step_{step_idx}_done"] = True
 
     # --- STEP 1 ---
     st.subheader("Step 1: The Engine")
@@ -99,7 +99,7 @@ from sentence_transformers import SentenceTransformer
 # Load the model
 model = SentenceTransformer("nomic-ai/nomic-embed-text-v1.5", trust_remote_code=True)"""  # noqa: F841
 
-    default_code_1 = """TODO: Add your code here"""
+    default_code_1 = _answer_code_1
 
     code_1 = st.text_area(
         "Step 1 Code:", value=default_code_1, height=150, key="code_1"
@@ -567,8 +567,17 @@ for idx in top_k_indices:
             user_query = st.text_input("Enter a search query:", "Time travel paradox")
 
             if user_query:
-                # 1. Embed Query (using the model you loaded!)
-                model = st.session_state["lab3_vars"]["model"]
+                # 1. Get model (from lab steps if available, else load default once)
+                model = st.session_state["lab3_vars"].get("model")
+                if model is None:
+                    with st.spinner("Loading default embedding model..."):
+                        try:
+                            model = get_default_embedding_model()
+                            st.session_state["lab3_vars"]["model"] = model
+                        except Exception as model_error:
+                            st.error(f"Could not load embedding model: {model_error}")
+                            return
+
                 query_vec = model.encode(
                     "search_query: " + user_query, normalize_embeddings=True
                 )
