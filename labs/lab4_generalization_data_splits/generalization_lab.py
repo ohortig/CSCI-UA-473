@@ -278,13 +278,16 @@ def _render_step_1(show_solutions=False):
     | `latitude`, `longitude` | Maps | Map visualizations |
 
     **Your Task**:
-    1. Load your raw CSV into a DataFrame.
-    2. Build a text string for each listing (combine columns of your choice).
-    3. Generate embeddings using `SentenceTransformer`.
-    4. Store the embeddings in a column named `embedding`.
-    5. **Save** the result to a file (e.g. parquet) so you don't have to
+    1. Download the raw data from the Inside Airbnb website:
+    https://data.insideairbnb.com/united-states/ny/new-york-city/2025-10-01/data/listings.csv.gz.
+    Save it to the `data/raw` directory.
+    2. Load your raw CSV into a DataFrame.
+    3. Build a text string for each listing (combine columns of your choice).
+    4. Generate embeddings using `SentenceTransformer`.
+    5. Store the embeddings in a column named `embedding`.
+    6. **Save** the result to a file (e.g. parquet) so you don't have to
        re-run embedding generation every time.
-    6. The final DataFrame should be named `df`.
+    7. The final DataFrame should be named `df`.
 
     > **Tip**: The code below checks for a cached processed file first.
     > If it exists, it loads directly and skips the slow embedding step.
