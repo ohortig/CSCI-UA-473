@@ -197,10 +197,7 @@ def render_generalization_lab():  # noqa: C901
     if "lab4_map_data" not in st.session_state:
         st.session_state["lab4_map_data"] = {}
 
-    st.sidebar.divider()
-    show_solutions = st.sidebar.checkbox(
-        "Show solution code", value=False, key="lab4_show_solutions"
-    )
+    show_solutions = False
 
     _render_step_1(show_solutions)
 
