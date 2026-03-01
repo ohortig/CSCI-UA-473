@@ -1,6 +1,6 @@
 import streamlit as st
 
-from labs.lab4_generalization_data_splits.generalization_lab import (
+from labs.lab4_generalization_data_splits.generalization_lab_teacher import (
     render_generalization_lab,
 )
 from utils.ui import display_footer
