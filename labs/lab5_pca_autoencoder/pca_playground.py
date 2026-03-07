@@ -106,6 +106,40 @@ def render_pca_lab():
 
     embeddings = st.session_state["lab5_data"]
 
+    # --- UNLOCK ALL STAGES ---
+    st.session_state["step_1_done"] = True
+    st.session_state["step_2_done"] = True
+
+    if "lab5_reduced_data" not in st.session_state:
+        from sklearn.decomposition import PCA
+
+        try:
+            pca = PCA(n_components=2)
+            st.session_state["lab5_reduced_data"] = pca.fit_transform(embeddings)
+        except Exception:
+            pass
+
+    if "Autoencoder_Class" not in st.session_state:
+        import torch.nn as nn
+
+        class Autoencoder(nn.Module):
+            def __init__(self, input_dim=emb_dim, latent_dim=2):
+                super().__init__()
+                self.encoder = nn.Sequential(
+                    nn.Linear(input_dim, 128), nn.ReLU(), nn.Linear(128, latent_dim)
+                )
+                self.decoder = nn.Sequential(
+                    nn.Linear(latent_dim, 128), nn.ReLU(), nn.Linear(128, input_dim)
+                )
+
+            def forward(self, x):
+                encoded = self.encoder(x)
+                decoded = self.decoder(encoded)
+                return decoded, encoded
+
+        st.session_state["Autoencoder_Class"] = Autoencoder
+    # -------------------------
+
     tab1, tab2, tab3 = st.tabs(
         ["📉 Step 1: PCA", "🧠 Step 2: Autoencoder Arch", "🔥 Step 3: Training"]
     )
