@@ -1905,7 +1905,7 @@ def render_step_5_anomaly_detection():
 def sigmoid(x):
     return np.where(x >= 0, 1 / (1 + np.exp(-x)), np.exp(x) / (1 + np.exp(x)))
 
-# Normalize features (do not modify)
+# Normalize features
 mean = X_train.mean(axis=0)
 std = X_train.std(axis=0) + 1e-8
 X_norm = (X_train - mean) / std
@@ -1934,8 +1934,8 @@ for epoch in range(300):
     # TODO: Update weights and bias using the gradient
     # dW = ...              # (n_features, 5)
     # db = ...              # (5,)
-    # W -= lr * dW
-    # b -= lr * db
+    W -= lr * dW
+    b -= lr * db
 
     if epoch % 100 == 0:
         loss = -np.mean(
@@ -1947,6 +1947,7 @@ for epoch in range(300):
 # TODO: Predict on test set -- store result in 'detection_probs'
 # detection_probs = ...    # (N_test, 5)  apply sigmoid to test logits
 
+# Summary
 signal_names = ["Earnings Surprise", "Value Rotation", "Small-Cap Discovery",
                 "Momentum Unwind", "Volatility Storm"]
 for i, name in enumerate(signal_names):
@@ -2394,7 +2395,7 @@ def render_step_6_trading_competition():
 #
 # Labels: Sell(0), Hold(1), Buy(2) based on next-day combined factor return
 
-# --- Scaffolding (do not modify) ---
+# --- Approach: Logistic Regression from scratch ---
 
 def softmax(u):
     shifted = u - np.max(u, axis=1, keepdims=True)
@@ -2432,14 +2433,16 @@ for epoch in range(300):
     # grad = ...            # (N, 3)
     # dW = ...              # (n_features, 3)
     # db = ...              # (3,)
-    # W -= lr * dW
-    # b -= lr * db
+    W -= lr * dW
+    b -= lr * db
 
     if epoch % 100 == 0:
         acc = (np.argmax(probs, axis=1) == y_train).mean()
         print(f"Epoch {epoch}: loss={loss:.4f}, accuracy={acc:.3f}")
 
 # TODO: Predict on test set
+# test_logits = ...
+# test_probs = ...
 # predictions = ...  # shape (600,), values in {0, 1, 2}  use np.argmax
 
 # Summary
