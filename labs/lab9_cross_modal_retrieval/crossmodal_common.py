@@ -1438,16 +1438,3 @@ This isolates how τ scales logits **without** retraining.
                     st.write(
                         f"{rank}. Text row **{ridx}** — score **{float(sims[ridx]):.4f}**"
                     )
-
-    # -----------------------------------------------------------------------
-    # Math foundation expander (path from repo root — not cwd — so it loads in Streamlit)
-    # -----------------------------------------------------------------------
-    _math_lesson = os.path.join(
-        project_root(), "pages", "math", "lesson_8_cross_modal.md"
-    )
-    with st.expander("Mathematical foundation: shared space & InfoNCE", expanded=False):
-        if os.path.isfile(_math_lesson):
-            with open(_math_lesson, encoding="utf-8") as f:
-                st.markdown(f.read(), unsafe_allow_html=True)
-        else:
-            st.info(f"Math notes not found (expected `{_math_lesson}`).")
