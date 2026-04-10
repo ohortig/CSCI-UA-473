@@ -1,269 +1,198 @@
-#!/usr/bin/env python3
 """
-Prepare the TMDB dataset used by Lab 3.
+TMDB Data Processing Script
 
-This script:
-1. Downloads TMDB data from Hugging Face
-2. Builds text fields for retrieval
-3. Generates Nomic text embeddings
-4. Saves `data/processed/tmdb_embedded.parquet`
+This script is responsible for converting the raw TMDB movie dataset into
+a machine learning-ready format with embeddings.
+
+What are embeddings?
+Embeddings are numerical vector representations of text that capture semantic
+meaning. Instead of treating words as discrete symbols, we convert them into
+points in a high-dimensional space where semantically similar items are close together.
+
+This script performs the following steps:
+1. Loads the raw TMDB dataset from Hugging Face
+2. Preprocesses text fields (handles missing values, combines fields)
+3. Generates embeddings using a pre-trained language model (Nomic AI)
+4. Saves the processed data with embeddings to a Parquet file
+
+Run this script once to prepare the data before using the Streamlit app.
 """
-
-from __future__ import annotations
-
-import argparse
-import ast
-from pathlib import Path
 
 import numpy as np
-import pandas as pd
-from datasets import load_dataset
-from sentence_transformers import SentenceTransformer
+from tqdm import tqdm  # Progress bar library for better user experience
 
-PROJECT_ROOT = Path(__file__).resolve().parent
-DEFAULT_DATASET = "AiresPucrs/tmdb-5000-movies"
-DEFAULT_MODEL = "nomic-ai/nomic-embed-text-v1.5"
-POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500"
+from utils.data_loader import load_tmdb_raw, save_processed_data
+from utils.embedding import get_embedder
 
 
-def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Process TMDB data for Lab 3.")
-    parser.add_argument(
-        "--dataset",
-        default=DEFAULT_DATASET,
-        help="Hugging Face dataset name.",
-    )
-    parser.add_argument(
-        "--split",
-        default="train",
-        help="Split to load (defaults to train).",
-    )
-    parser.add_argument(
-        "--output",
-        default="data/processed/tmdb_embedded.parquet",
-        help="Where to save the processed parquet file.",
-    )
-    parser.add_argument(
-        "--model",
-        default=DEFAULT_MODEL,
-        help="SentenceTransformer model for embeddings.",
-    )
-    parser.add_argument(
-        "--batch-size",
-        type=int,
-        default=64,
-        help="Embedding batch size.",
-    )
-    parser.add_argument(
-        "--max-rows",
-        type=int,
-        default=None,
-        help="Optional row limit (useful for quick checks).",
-    )
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Overwrite output if it already exists.",
-    )
-    return parser.parse_args()
+def process_and_save():
+    """
+    Main data processing pipeline.
 
+    Steps:
+    1. Load raw TMDB dataset.
+    2. Preprocess text fields (handle missing values, combine title + overview).
+    3. Check if we can reuse existing embeddings (optimization).
+    4. Generate embeddings for new data using the Nomic model.
+    5. Save the final dataframe with embeddings to Parquet.
+    """
+    # ========================================================================
+    # STEP 1: LOAD RAW DATA
+    # ========================================================================
+    print("Loading raw data...")
+    df = load_tmdb_raw()
 
-def resolve_path(path_text: str) -> Path:
-    path = Path(path_text)
-    if not path.is_absolute():
-        path = PROJECT_ROOT / path
-    return path
-
-
-def choose_column(
-    df: pd.DataFrame, candidates: list[str], required: bool = False
-) -> str | None:
-    for name in candidates:
-        if name in df.columns:
-            return name
-    if required:
-        raise KeyError(f"Missing required column. Tried: {candidates}")
-    return None
-
-
-def is_missing_scalar(value: object) -> bool:
-    if value is None:
-        return True
-    if isinstance(value, (list, tuple, dict, set, np.ndarray, pd.Series, pd.DataFrame)):
-        return False
-    try:
-        missing = pd.isna(value)
-    except (TypeError, ValueError):
-        return False
-    if isinstance(missing, (bool, np.bool_)):
-        return bool(missing)
-    return False
-
-
-def normalize_genres(value: object) -> str:
-    if is_missing_scalar(value):
-        return ""
-
-    if isinstance(value, dict):
-        name = value.get("name")
-        return str(name) if name else ""
-
-    if isinstance(value, np.ndarray):
-        value = value.tolist()
-    if isinstance(value, tuple):
-        value = list(value)
-
-    if isinstance(value, list):
-        names: list[str] = []
-        for item in value:
-            if isinstance(item, dict):
-                name = item.get("name")
-                if name:
-                    names.append(str(name))
-            elif item is not None:
-                names.append(str(item))
-        return ", ".join(names)
-
-    text = str(value).strip()
-    if not text or text.lower() == "nan":
-        return ""
-
-    if text.startswith("[") or text.startswith("{"):
-        try:
-            parsed = ast.literal_eval(text)
-        except (SyntaxError, ValueError):
-            return text
-        return normalize_genres(parsed)
-
-    return text
-
-
-def resolve_poster_url(value: object) -> str:
-    if is_missing_scalar(value):
-        return ""
-
-    text = str(value).strip()
-    if not text or text.lower() == "nan":
-        return ""
-    if text.startswith("http://") or text.startswith("https://"):
-        return text
-    if not text.startswith("/"):
-        text = f"/{text}"
-    return f"{POSTER_BASE_URL}{text}"
-
-
-def load_tmdb_dataframe(dataset_name: str, split: str) -> tuple[pd.DataFrame, str]:
-    try:
-        split_ds = load_dataset(dataset_name, split=split)
-        return split_ds.to_pandas(), split
-    except Exception as split_error:
-        print(
-            f"Could not load split '{split}' directly ({type(split_error).__name__}). "
-            "Trying dataset splits."
-        )
-        ds_dict = load_dataset(dataset_name)
-        if split in ds_dict:
-            return ds_dict[split].to_pandas(), split
-        selected_split = next(iter(ds_dict.keys()))
-        print(f"Using split '{selected_split}'.")
-        return ds_dict[selected_split].to_pandas(), selected_split
-
-
-def build_output_dataframe(raw_df: pd.DataFrame) -> pd.DataFrame:
-    title_col = choose_column(raw_df, ["title", "original_title"], required=True)
-    overview_col = choose_column(
-        raw_df, ["overview", "description", "plot", "plot_summary"], required=True
-    )
-    id_col = choose_column(raw_df, ["id", "movie_id", "tmdb_id"])
-    genres_col = choose_column(raw_df, ["genres"])
-    rating_col = choose_column(raw_df, ["vote_average", "rating", "imdb_rating"])
-    revenue_col = choose_column(raw_df, ["revenue", "box_office"])
-    poster_col = choose_column(raw_df, ["poster_path", "poster", "poster_url"])
-    release_col = choose_column(raw_df, ["release_date", "release_year"])
-
-    out = pd.DataFrame(index=raw_df.index)
-    if id_col:
-        out["movie_id"] = raw_df[id_col]
-    else:
-        out["movie_id"] = np.arange(len(raw_df))
-
-    out["title"] = raw_df[title_col].fillna("").astype(str).str.strip()
-    out["overview"] = raw_df[overview_col].fillna("").astype(str).str.strip()
-    out["genres"] = (
-        raw_df[genres_col].apply(normalize_genres)
-        if genres_col
-        else pd.Series("", index=raw_df.index)
-    )
-    out["vote_average"] = (
-        pd.to_numeric(raw_df[rating_col], errors="coerce") if rating_col else np.nan
-    )
-    out["revenue"] = (
-        pd.to_numeric(raw_df[revenue_col], errors="coerce") if revenue_col else np.nan
-    )
-    out["release_date"] = (
-        raw_df[release_col].fillna("").astype(str).str.strip() if release_col else ""
-    )
-    out["poster_path"] = (
-        raw_df[poster_col].fillna("").astype(str).str.strip() if poster_col else ""
-    )
-    out["poster_url"] = out["poster_path"].apply(resolve_poster_url)
-    out["local_poster_path"] = ""
-
-    out = out[out["title"] != ""].reset_index(drop=True)
-    return out
-
-
-def build_document_texts(df: pd.DataFrame) -> list[str]:
-    documents: list[str] = []
-    for row in df.itertuples(index=False):
-        parts = [f"Title: {row.title}"]
-        if row.genres:
-            parts.append(f"Genres: {row.genres}")
-        if row.overview:
-            parts.append(f"Overview: {row.overview}")
-        documents.append("search_document: " + " | ".join(parts))
-    return documents
-
-
-def main() -> None:
-    args = parse_args()
-    output_path = resolve_path(args.output)
-
-    if output_path.exists() and not args.force:
-        print(f"Output already exists: {output_path}")
-        print("Use --force to overwrite.")
+    # Check if the data loaded successfully
+    if df.empty:
+        print("Error: Could not load data.")
         return
 
-    print(f"Loading dataset '{args.dataset}' (split='{args.split}')...")
-    raw_df, selected_split = load_tmdb_dataframe(args.dataset, args.split)
-    print(f"Loaded {len(raw_df)} rows from split '{selected_split}'.")
-    print(f"Columns: {', '.join(raw_df.columns)}")
+    print(f"Loaded {len(df)} movies.")
 
-    df = build_output_dataframe(raw_df)
-    if args.max_rows is not None:
-        df = df.head(args.max_rows).copy()
+    # ========================================================================
+    # STEP 2: PREPROCESS TEXT DATA
+    # ========================================================================
+    # Preprocessing is crucial for ML pipelines. We need to:
+    # - Handle missing values (NaN) that would break string operations
+    # - Combine relevant text fields to give the model more context
+    # - Clean and standardize the data format
 
-    if df.empty:
-        raise ValueError("No rows available after preprocessing.")
+    # Fill NaN values with empty strings to avoid errors during string concatenation
+    # In pandas, NaN + "text" = NaN, which would lose information
+    df["overview"] = df["overview"].fillna("")
+    df["title"] = df["title"].fillna("")
 
-    print(f"Preparing embeddings for {len(df)} movies...")
-    model = SentenceTransformer(args.model, trust_remote_code=True)
-    doc_texts = build_document_texts(df)
+    # Create a combined text field for embedding
+    # Why combine title + overview?
+    # - The title provides the main topic/entity
+    # - The overview provides detailed context
+    # - Together, they give the embedding model the full semantic picture
+    # - The "Title: " and "Overview: " prefixes help the model distinguish between fields
+    df["text_content"] = "Title: " + df["title"] + "; Overview: " + df["overview"]
 
-    embeddings = model.encode(
-        doc_texts,
-        batch_size=args.batch_size,
-        show_progress_bar=True,
-        normalize_embeddings=True,
-    )
-    df["embedding"] = [vec.astype(np.float32).tolist() for vec in embeddings]
+    # Keep only relevant columns to reduce file size and memory usage
+    # This is a best practice: only keep what you need
+    cols_to_keep = [
+        "id",
+        "title",
+        "overview",
+        "text_content",
+        "genres",
+        "vote_average",
+        "revenue",
+        "popularity",
+        "homepage",
+    ]
 
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    df.to_parquet(output_path, index=False)
+    # Check if columns exist (dataset schema might vary across versions)
+    # This defensive programming prevents KeyErrors
+    available_cols = [c for c in cols_to_keep if c in df.columns]
+    df = df[available_cols]
 
-    print(f"Saved {len(df)} rows to: {output_path}")
-    print("Done.")
+    # ========================================================================
+    # STEP 3: CHECK FOR EXISTING EMBEDDINGS (OPTIMIZATION)
+    # ========================================================================
+    # Generating embeddings is computationally expensive (can take minutes).
+    # If we've already processed this data, we can reuse the embeddings.
+    # This is especially useful during development when tweaking metadata.
+
+    existing_df = None
+    try:
+        from utils.data_loader import load_processed_data
+
+        existing_df = load_processed_data()
+    except Exception:
+        # If loading fails (file doesn't exist), that's okay - we'll generate new embeddings
+        pass
+
+    if existing_df is not None and len(existing_df) == len(df):
+        print("Found existing processed data. Reusing embeddings...")
+
+        # Ensure alignment: the existing embeddings must match our current data
+        if "embedding" in existing_df.columns:
+            # Verify that the movie IDs match exactly
+            # This ensures we're not mixing up embeddings between different movies
+            if existing_df["id"].equals(df["id"]):
+                # Copy the pre-computed embeddings
+                df["embedding"] = existing_df["embedding"]
+
+                # Preserve other columns that might have been added (like image embeddings)
+                # This allows us to incrementally add features without reprocessing everything
+                for col in existing_df.columns:
+                    if col not in df.columns:
+                        df[col] = existing_df[col]
+
+                print("Embeddings reused successfully.")
+                print("Saving processed data...")
+                save_processed_data(df)
+                print("Done!")
+                return
+            else:
+                print("Data mismatch. Regenerating embeddings...")
+
+    # ========================================================================
+    # STEP 4: GENERATE EMBEDDINGS
+    # ========================================================================
+    # If we reach here, we need to generate new embeddings
+
+    print("Initializing embedder...")
+    # The embedder loads a pre-trained transformer model (Nomic AI)
+    # This model has learned to convert text into meaningful vectors
+    embedder = get_embedder()
+
+    print("Generating embeddings...")
+
+    # Batch processing configuration
+    # Why use batches?
+    # 1. Memory efficiency: Processing all 5000 movies at once could exceed RAM
+    # 2. GPU utilization: Modern GPUs are optimized for batch operations
+    # 3. Progress tracking: We can show progress as batches complete
+    batch_size = 32  # Process 32 movies at a time (a common batch size)
+
+    embeddings = []  # Collect embeddings from all batches
+
+    # Convert dataframe column to a list for easier batch processing
+    texts = df["text_content"].tolist()
+
+    # Process in batches to manage memory usage and show progress
+    # tqdm shows a progress bar so we know how long the process will take
+    for i in tqdm(range(0, len(texts), batch_size)):
+        # Extract the current batch of texts
+        batch_texts = texts[i : i + batch_size]
+
+        # Generate embeddings for this batch
+        # task_type="search_document" tells the model these are the items to be retrieved
+        # (as opposed to "search_query" which is used for the query text)
+        # This distinction helps the model optimize for asymmetric search
+        batch_embeddings = embedder.embed(batch_texts, task_type="search_document")
+
+        # Collect the batch results
+        embeddings.append(batch_embeddings)
+
+    # Concatenate all batch results into a single numpy matrix
+    # vstack = vertical stack (stacks arrays row-wise)
+    # Result shape: (n_movies, embedding_dimension)
+    all_embeddings = np.vstack(embeddings)
+
+    # ========================================================================
+    # STEP 5: SAVE PROCESSED DATA
+    # ========================================================================
+    # Add embeddings to dataframe
+    # We convert the numpy array to a list of arrays for Parquet compatibility
+    # Parquet handles lists well, but numpy arrays can sometimes be tricky depending on the engine
+    df["embedding"] = list(all_embeddings)
+
+    print("Saving processed data...")
+    # Save to Parquet format (faster and more efficient than CSV)
+    save_processed_data(df)
+    print("Done!")
 
 
+# ========================================================================
+# SCRIPT ENTRY POINT
+# ========================================================================
+# This pattern allows the file to be imported as a module OR run as a script
+# When run as a script (python process_data.py), __name__ == "__main__"
+# When imported (from process_data import ...), __name__ == "process_data"
 if __name__ == "__main__":
-    main()
+    process_and_save()
