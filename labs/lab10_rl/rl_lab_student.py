@@ -16,7 +16,9 @@ import sys
 import traceback
 from string import Template
 
+import gymnasium as gym
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
@@ -637,6 +639,7 @@ def q_learning(gamma=GAMMA, alpha=0.5, epsilon=0.1, n_episodes=3000):
             total_return += REWARD_GRID[r, c]
             state = next_state
 
+        total_return += REWARD_GRID[state]
         episode_returns.append(total_return)
 
     return Q, episode_returns
@@ -678,6 +681,7 @@ def q_learning(gamma=GAMMA, alpha=0.5, epsilon=0.1, n_episodes=3000):
             total_return += REWARD_GRID[r, c]
             state = next_state
 
+        total_return += REWARD_GRID[state]
         episode_returns.append(total_return)
 
     return Q, episode_returns
@@ -737,8 +741,6 @@ print(f"Mean return (last 500 eps): {np.mean(episode_returns[-500:]):.2f}")"""
                 "Return": episode_returns,
                 "Smoothed (100-ep avg)": smoothed,
             }
-            import pandas as pd
-
             ret_df = pd.DataFrame(ret_df)
             fig = px.line(
                 ret_df,
@@ -1270,8 +1272,6 @@ print(f"\\nNaive final mean return (last 25 eps): {np.mean(episode_returns[-25:]
             st.warning(result["msg"])
             episode_returns = st.session_state.get("lab10_naive_episode_returns", [])
             if episode_returns:
-                import pandas as pd
-
                 window = 20
                 smoothed = [
                     np.mean(episode_returns[max(0, i - window) : i + 1])
@@ -1554,8 +1554,6 @@ print(f"\\nFinal mean return (last 50 eps): {np.mean(episode_returns[-50:]):.1f}
         lv = st.session_state["lab10_vars"]
         episode_returns = lv.get("episode_returns", [])
         if episode_returns:
-            import pandas as pd
-
             window = 20
             smoothed = [
                 np.mean(episode_returns[max(0, i - window) : i + 1])
@@ -1592,8 +1590,6 @@ print(f"\\nFinal mean return (last 50 eps): {np.mean(episode_returns[-50:]):.1f}
         policy_net = lv.get("policy_net")
         if policy_net is not None:
             if "lab10_dqn_replay_states" not in st.session_state:
-                import gymnasium as gym
-
                 env = gym.make("CartPole-v1")
                 obs, _ = env.reset(seed=42)
                 replay_states = [obs.tolist()]

@@ -36,7 +36,7 @@ def _greedy_policy(V_or_Q):
         policy = np.zeros((GRID_SIZE, GRID_SIZE), dtype=int)
         for r in range(GRID_SIZE):
             for c in range(GRID_SIZE):
-                best_a, best_v = 0, -1e9
+                best_a, best_v = 0, -np.inf
                 for a in range(NUM_ACTIONS):
                     ns, _ = _grid_step((r, c), a)
                     nr, nc = ns
