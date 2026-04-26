@@ -215,3 +215,6 @@ data/raw/
 data/posters/
 dungeon_tensor_save.json
 process_airbnb.py
+
+# Study guide
+docs/
